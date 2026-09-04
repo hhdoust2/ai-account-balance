@@ -1,0 +1,586 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>موجودی و سهمیهٔ ارائه‌دهنده‌ها (Pollinations، OpenRouter، AnyModel، Tomdacat)</title>
+<style>
+  :root{
+    --bg:#0d0f15; --panel:#161a23; --row:#12151d; --row-alt:#161a23; --row-hover:#1e2431;
+    --border:#272c39; --text:#e8eaf0; --muted:#98a1b4; --accent:#7c9cff;
+    --none:#39404e; --chip:#1e2431;
+    --warn:#ffb454; --bad:#ff6b81; --out:#3ddc97;
+  }
+  @media (prefers-color-scheme:light){
+    :root{
+      --bg:#f4f6fa; --panel:#fff; --row:#fff; --row-alt:#f8f9fc; --row-hover:#edf1ff;
+      --border:#e0e4ee; --text:#171a22; --muted:#5c6478; --accent:#3455d1;
+      --none:#c6ccd9; --chip:#eef1f8;
+      --warn:#b26a00; --bad:#c1273b; --out:#0f9d63;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--text); line-height:1.6;
+       font-family:"Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 16px}
+  header{border-bottom:1px solid var(--border); padding:20px 0 12px}
+  h1{margin:0 0 4px; font-size:1.3rem}
+  .sub{margin:0; color:var(--muted); font-size:.84rem}
+  code{background:var(--chip); padding:1px 6px; border-radius:5px; font-size:.85em;
+       direction:ltr; display:inline-block}
+
+  .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px}
+  input[type="text"],input[type="password"],select,button{font:inherit; color:var(--text); background:var(--panel);
+       border:1px solid var(--border); border-radius:9px; padding:8px 12px}
+  button,select{cursor:pointer}
+  button:hover,select:hover{border-color:var(--accent)}
+  button:disabled{opacity:.4; cursor:not-allowed}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  details.settings{margin-top:10px; border:1px solid var(--border); border-radius:12px;
+      background:var(--panel); padding:2px 14px}
+  details.settings summary{cursor:pointer; padding:8px 0; font-size:.84rem; color:var(--accent)}
+  .keyrow{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:6px 0 14px}
+  .keyrow label{font-size:.78rem; color:var(--muted); min-width:110px}
+  .keyrow input[type="text"],.keyrow input[type="password"]{flex:1 1 160px; direction:ltr}
+  .keyrow select{flex:1 1 220px}
+  .keyrow input[type="checkbox"]{width:auto}
+  .keynote{color:var(--muted); font-size:.76rem; margin:0 0 8px}
+  .keysub{margin:14px 0 4px; font-size:.8rem; color:var(--muted)}
+  .p-chk{display:flex; align-items:center; gap:6px; min-width:190px; font-size:.78rem; color:var(--text)}
+  .statusmsg{font-size:.76rem; color:var(--muted)}
+
+  .acct-block{border-top:1px solid var(--border); padding-top:10px; margin-top:10px}
+  .acct-row{padding:5px 0}
+  .acct-name{max-width:150px}
+  .new-acct-row{padding-top:2px}
+  .add-acct,.del-acct{font-size:.76rem; padding:6px 10px}
+
+  .badge{display:inline-block; border-radius:999px; padding:1px 9px; font-size:.72rem; font-weight:600; color:#fff}
+  .legend{margin:12px 0; font-size:.76rem; color:var(--muted)}
+
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; margin:16px 0 28px}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:18px}
+  .card .chead{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:8px}
+  .card .chead .badge{white-space:normal; text-align:right; line-height:1.4}
+  .card .biglabel{color:var(--muted); font-size:.78rem; margin-bottom:2px}
+  .card .big{font-size:2rem; font-weight:700; direction:ltr; text-align:right; word-break:break-all}
+  .bar{height:8px; border-radius:999px; background:var(--none); overflow:hidden; margin:12px 0 4px}
+  .bar > span{display:block; height:100%; background:var(--accent)}
+  .barlbl{font-size:.72rem; color:var(--muted); display:flex; justify-content:space-between}
+  .specs{margin:12px 0 0; display:grid; gap:5px 14px; grid-template-columns:auto 1fr; font-size:.82rem}
+  .specs dt{color:var(--muted); white-space:nowrap}
+  .specs dd{margin:0; word-break:break-word; direction:ltr; text-align:right}
+  .cardfoot{display:flex; justify-content:space-between; align-items:center; margin-top:14px; gap:8px}
+  .cardfoot button{font-size:.76rem; padding:5px 10px}
+  .stamp{font-size:.72rem; color:var(--muted); white-space:nowrap}
+  details.raw summary{cursor:pointer; color:var(--accent); font-size:.78rem; margin-top:10px}
+  pre{margin:8px 0 0; padding:12px; background:var(--chip); border-radius:10px;
+      direction:ltr; text-align:left; overflow:auto; max-height:220px; font-size:.76rem}
+
+  .state{text-align:center; padding:30px 10px; color:var(--muted); font-size:.84rem}
+  .spinner{width:26px;height:26px;margin:0 auto 10px;border:3px solid var(--border);
+           border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spinner{animation-duration:2s}}
+  .cardstate{padding:18px 4px}
+  .err{background:#2a1a1f;border:1px solid #7c2b3a;color:#ffb6c2;padding:12px;
+       border-radius:10px; font-size:.8rem; margin:0}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>موجودی و سهمیهٔ ارائه‌دهنده‌ها</h1>
+    <p class="sub">Pollinations · OpenRouter · AnyModel · Tomdacat Code — بقیهٔ ارائه‌دهنده‌های جدول مدل‌ها (Together AI، Groq، Google،
+      Mistral و غیره) در حال حاضر endpoint عمومی برای چک‌کردن موجودی از طریق کلید API ارائه نمی‌کنند.
+      هر ارائه‌دهنده می‌تواند چند حساب نام‌گذاری‌شده داشته باشد؛ درخواست‌ها یکی‌یکی و با فاصلهٔ زمانی
+      ارسال می‌شوند، نه هم‌زمان.</p>
+
+    <div class="toolbar">
+      <button id="reloadAll" type="button">بارگیری مجدد همه</button>
+      <span class="sub" id="globalMsg" aria-live="polite"></span>
+    </div>
+
+    <details class="settings">
+      <summary>پروکسی CORS و حساب‌های API</summary>
+      <p class="keynote">آدرس پروکسی با جدول مدل‌ها (index.html) مشترک است. کلیدها فقط در همین مرورگر
+        (<code>localStorage</code>) نگه‌داری می‌شوند و به جایی جز پروکسی/سرویس مقصد ارسال نمی‌شوند.
+        اگر قبلاً در جدول مدل‌ها کلید OpenRouter یا Pollinations وارد کرده باشید، اولین بار به‌صورت
+        خودکار به‌عنوان یک حساب با نام «پیش‌فرض» وارد این صفحه می‌شود.</p>
+
+      <div class="keyrow"><label for="proxyUrl">آدرس پروکسی</label>
+        <input id="proxyUrl" type="text" placeholder="https://your-worker.workers.dev"></div>
+      <div class="keyrow"><label for="proxyTpl">الگوی پروکسی</label>
+        <select id="proxyTpl"></select></div>
+      <div class="keyrow" id="customTplRow" style="display:none">
+        <label for="proxyCustomTpl">قالب سفارشی</label>
+        <input id="proxyCustomTpl" type="text" placeholder="{proxy}/{url}"></div>
+      <div class="keyrow">
+        <label></label>
+        <label class="p-chk"><input type="checkbox" id="proxyEncode"> آدرس مقصد را قبل از جای‌گذاری encode کن</label>
+      </div>
+
+      <p class="keysub">حساب‌ها (کلید هر حساب به‌صورت هدر <code>Authorization: Bearer</code> ارسال می‌شود):</p>
+      <div id="keyRows"></div>
+
+      <div class="keyrow">
+        <button id="savekeys" type="button">ذخیرهٔ تغییرات و بارگیری مجدد</button>
+        <span class="statusmsg" id="settingsMsg" aria-live="polite"></span>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="legend">هر کارت را می‌توانید جدا بارگیری مجدد کنید. برای جزئیات کامل پاسخ خام، «دادهٔ خام JSON» را باز کنید.</p>
+  <div id="cards" class="cards"></div>
+</main>
+
+<script>
+/* ================= تعریف ارائه‌دهنده‌ها =================
+   این‌ها ارائه‌دهنده‌هایی هستند که یک endpoint عمومیِ مستند برای چک‌کردن
+   موجودی/اعتبار از طریق کلید API دارند (بررسی‌شده). بقیهٔ ارائه‌دهنده‌های جدول
+   مدل‌ها فقط از طریق داشبورد وب قابل چک‌کردن هستند، نه API. */
+const BALANCE_PROVIDERS = [
+  {
+    key:"pollinations", label:"Pollinations", url:"https://gen.pollinations.ai/account/balance",
+    keyHint:"کلید Pollinations",
+    parse(raw){
+      const acc = raw.accountBalance || null;
+      return {
+        big: raw.balance,
+        bigLabel: "موجودی این کلید (Pollen)",
+        bar: null,
+        rows: [
+          ...(acc ? [
+            ["کل حساب (Quest + خریداری‌شده)", fmtNum(acc.total)],
+            ["سهمیهٔ Quest باقی‌مانده", fmtNum(acc.tier)],
+            ["Pollen خریداری‌شدهٔ باقی‌مانده", fmtNum(acc.paid)]
+          ] : [["نکته", "این کلید فقط بودجهٔ خودش را می‌بیند، نه کل حساب (accountBalance در پاسخ نبود)"]])
+        ]
+      };
+    }
+  },
+  {
+    key:"openrouter", label:"OpenRouter", url:"https://openrouter.ai/api/v1/key",
+    keyHint:"sk-or-...",
+    parse(raw){
+      const d = raw.data || {};
+      const hasLimit = d.limit != null;
+      const remaining = d.limit_remaining;
+      return {
+        big: remaining != null ? remaining : "نامحدود",
+        bigLabel: "اعتبار باقی‌ماندهٔ این کلید",
+        bar: hasLimit && remaining != null
+          ? { pct: Math.max(0, Math.min(100, (remaining / d.limit) * 100)),
+              text: `${fmtNum(remaining)} از ${fmtNum(d.limit)}` }
+          : null,
+        rows: [
+          ["برچسب کلید", d.label ?? "—"],
+          ["مصرف‌شده (usage)", fmtNum(d.usage)],
+          ["سقف اعتبار کلید (limit)", hasLimit ? fmtNum(d.limit) : "نامحدود"],
+          ["نوع بازنشانی سقف", d.limit_reset ?? "—"],
+          ["سطح رایگان (is_free_tier)", d.is_free_tier === true ? "بله" : d.is_free_tier === false ? "خیر" : "—"]
+        ]
+      };
+    }
+  },
+  {
+    key:"anymodel", label:"AnyModel", url:"https://anymodel.org/v1/balance",
+    keyHint:"ANYMODEL_API_KEY",
+    parse(raw){
+      const unlimited = raw.unlimited === true;
+      return {
+        big: unlimited ? "نامحدود" : raw.balance,
+        bigLabel: "موجودی این کلید (balance tokens)",
+        bar: null,
+        rows: [
+          ["وضعیت (status)", raw.status ?? "—"],
+          ["نامحدود (unlimited)", unlimited ? "بله" : "خیر"],
+          ["کلید", raw.key ?? "—"]
+        ]
+      };
+    }
+  },
+  {
+    /* این ارائه‌دهنده دو endpoint دارد؛ چون usage فقط اعداد مصرف را می‌دهد و verify
+       اطلاعات پلن/کلید را، هر دو گرفته و در یک کارت با هم نمایش داده می‌شوند
+       (به‌ترتیب و با فاصلهٔ SEND_DELAY_MS، نه هم‌زمان). */
+    key:"tomdacat", label:"Tomdacat Code",
+    endpoints:[
+      { key:"usage",  url:"https://ai.tomdacat.com/code/v1/usage" },
+      { key:"verify", url:"https://ai.tomdacat.com/code/v1/verify" }
+    ],
+    keyHint:"tdcc_...",
+    parse(raw){
+      const usage = raw.usage || {};
+      const verify = raw.verify || {};
+      const vUsage = verify.usage || {};
+      const session = usage.session || vUsage.session || {};
+      const weekly  = usage.weekly  || vUsage.weekly  || {};
+      const premium = usage.premium ?? vUsage.premium ?? null;
+      const plan = verify.plan || usage.plan || {};
+      const remaining = session.remaining ?? (
+        session.limit != null && session.used != null ? session.limit - session.used : null
+      );
+      const hasLimit = session.limit != null;
+
+      return {
+        big: remaining != null ? remaining : "—",
+        bigLabel: "باقی‌ماندهٔ سهمیهٔ Session",
+        bar: hasLimit && remaining != null
+          ? { pct: Math.max(0, Math.min(100, (remaining / session.limit) * 100)),
+              text: `${fmtNum(remaining)} از ${fmtNum(session.limit)}` }
+          : null,
+        rows: [
+          ["پلن", plan.name ?? "—"],
+          ["وضعیت پلن", plan.status ?? "—"],
+          ["مدل‌های مجاز", (plan.models || []).join("، ") || "—"],
+          ["مدل‌های پرمیوم", (plan.premiumModels || []).join("، ") || "—"],
+          ["بازنشانی سهمیهٔ Session", session.resetsAt ?? "—"],
+          ["مصرف هفتگی", `${fmtNum(weekly.used)} از ${fmtNum(weekly.limit)}`],
+          ["بازنشانی سهمیهٔ هفتگی", weekly.resetsAt ?? "—"],
+          ["سهمیهٔ مدل پرچمدار (premium)", premium == null ? "بدون سهمیهٔ جدا" :
+            `${fmtNum(premium.used)} از ${fmtNum(premium.limit)}`],
+          ["اعتبار کلید (valid)", verify.valid === true ? "بله" : verify.valid === false ? "خیر" : "—"],
+          ["نام کلید", verify.key?.name ?? "—"],
+          ["آخرین استفادهٔ کلید", verify.key?.lastUsedAt ?? "—"]
+        ]
+      };
+    }
+  }
+];
+
+const PROXY_TEMPLATES = [
+  { id:"path",    label:"{proxy}/{url} — مسیر مستقیم (رایج‌ترین حالت Worker)" },
+  { id:"query",   label:"{proxy}/?url={url} — پارامتر url=" },
+  { id:"proxied", label:"{proxy}/proxy/{url} — مسیر /proxy/" },
+  { id:"custom",  label:"سفارشی…" }
+];
+const TPL_STR = { path:"{proxy}/{url}", query:"{proxy}/?url={url}", proxied:"{proxy}/proxy/{url}" };
+
+/* هر درخواست چقدر بعد از قبلی صبر کند (نه هم‌زمان) */
+const SEND_DELAY_MS = 600;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ================= کمکی‌ها ================= */
+const $ = id => document.getElementById(id);
+const cardsEl = $("cards"), globalMsgEl = $("globalMsg");
+const proxyUrlEl = $("proxyUrl"), proxyTplEl = $("proxyTpl"), customTplRowEl = $("customTplRow"),
+      proxyCustomTplEl = $("proxyCustomTpl"), proxyEncodeEl = $("proxyEncode"),
+      keyRowsEl = $("keyRows"), settingsMsgEl = $("settingsMsg");
+
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+function fmtNum(n){
+  if (n == null || n === "" || isNaN(n)) return "—";
+  return Number(n).toLocaleString("fa-IR", { maximumFractionDigits: 4 });
+}
+function provColor(key){
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 360;
+  return `hsl(${h}, 62%, 50%)`;
+}
+function genId(){ return Math.random().toString(36).slice(2, 10); }
+
+/* ================= پروکسی CORS (مشترک با index.html) ================= */
+const PROXY_KEY = "provider_models_proxy_v1";
+const DEFAULT_PROXY = {
+  proxy:"https://ai-reverse.aialsabela.workers.dev",
+  template:"path", customTemplate:"{proxy}/{url}", encode:false
+};
+function loadProxySettings(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(PROXY_KEY));
+    return raw ? { ...DEFAULT_PROXY, ...raw } : { ...DEFAULT_PROXY };
+  }catch{ return { ...DEFAULT_PROXY }; }
+}
+function saveProxySettings(s){ try{ localStorage.setItem(PROXY_KEY, JSON.stringify(s)); }catch{} }
+let proxySettings = loadProxySettings();
+
+function buildProxyUrl(target){
+  const proxy = (proxySettings.proxy || "").trim();
+  if (!proxy) return target;
+  const base = proxy.replace(/\/+$/, "");
+  const tpl = proxySettings.template === "custom"
+    ? (proxySettings.customTemplate || "{proxy}/{url}")
+    : (TPL_STR[proxySettings.template] || TPL_STR.path);
+  const urlPart = proxySettings.encode ? encodeURIComponent(target) : target;
+  return tpl.replace("{proxy}", base).replace("{url}", urlPart);
+}
+
+/* کلید تکی که جدول مدل‌ها (index.html) استفاده می‌کند — فقط برای وارد کردن
+   خودکارِ یک‌باره به‌عنوان اولین حساب («پیش‌فرض») خوانده می‌شود */
+const LEGACY_KEY_STORE = "provider_models_api_keys_v2";
+function loadLegacyKeys(){
+  try{ return JSON.parse(localStorage.getItem(LEGACY_KEY_STORE)) || {}; }catch{ return {}; }
+}
+
+/* ================= حساب‌های چندگانه به ازای هر ارائه‌دهنده ================= */
+const ACCOUNTS_KEY = "balance_accounts_v1";
+function loadAccounts(){
+  try{ return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || {}; }catch{ return {}; }
+}
+function saveAccounts(obj){ try{ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(obj)); }catch{} }
+
+function ensureSeeded(){
+  const accounts = loadAccounts();
+  const legacy = loadLegacyKeys();
+  let changed = false;
+  BALANCE_PROVIDERS.forEach(p => {
+    if (!accounts[p.key]) accounts[p.key] = [];
+    if (!accounts[p.key].length){
+      const legacyKey = (legacy[p.key]?.key || "").trim();
+      if (legacyKey){
+        accounts[p.key].push({ id:genId(), name:"پیش‌فرض", key:legacyKey });
+        changed = true;
+      }
+    }
+  });
+  if (changed) saveAccounts(accounts);
+  return accounts;
+}
+
+/* ================= رندر پنل تنظیمات ================= */
+function renderSettingsPanel(){
+  proxyUrlEl.value = proxySettings.proxy || "";
+  proxyTplEl.innerHTML = PROXY_TEMPLATES.map(t => `<option value="${t.id}">${esc(t.label)}</option>`).join("");
+  proxyTplEl.value = proxySettings.template;
+  customTplRowEl.style.display = proxySettings.template === "custom" ? "" : "none";
+  proxyCustomTplEl.value = proxySettings.customTemplate || "{proxy}/{url}";
+  proxyEncodeEl.checked = !!proxySettings.encode;
+
+  const accounts = loadAccounts();
+  keyRowsEl.innerHTML = BALANCE_PROVIDERS.map(p => {
+    const list = accounts[p.key] || [];
+    const rows = list.map(a => `
+      <div class="keyrow acct-row" data-p="${esc(p.key)}" data-id="${esc(a.id)}">
+        <input type="text" class="acct-name" value="${esc(a.name)}" placeholder="اسم حساب">
+        <input type="password" class="acct-key" value="${esc(a.key)}" placeholder="${esc(p.keyHint)}" autocomplete="off">
+        <button type="button" class="del-acct" data-p="${esc(p.key)}" data-id="${esc(a.id)}">حذف</button>
+      </div>`).join("") || `<p class="keynote">هنوز حسابی برای ${esc(p.label)} اضافه نشده.</p>`;
+
+    return `<div class="acct-block" data-p="${esc(p.key)}">
+      <span class="badge" style="background:${provColor(p.key)}">${esc(p.label)}</span>
+      ${rows}
+      <div class="keyrow new-acct-row" data-p="${esc(p.key)}">
+        <input type="text" class="acct-name-new" placeholder="اسم حساب (مثلاً «اکانت ۱»)">
+        <input type="password" class="acct-key-new" placeholder="${esc(p.keyHint)}" autocomplete="off">
+        <button type="button" class="add-acct" data-p="${esc(p.key)}">+ افزودن حساب</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+proxyTplEl.addEventListener("change", () => {
+  customTplRowEl.style.display = proxyTplEl.value === "custom" ? "" : "none";
+});
+
+keyRowsEl.addEventListener("click", e => {
+  const addBtn = e.target.closest(".add-acct");
+  if (addBtn){
+    const p = addBtn.dataset.p;
+    const row = addBtn.closest(".new-acct-row");
+    const name = row.querySelector(".acct-name-new").value.trim();
+    const key = row.querySelector(".acct-key-new").value.trim();
+    if (!key){ settingsMsgEl.textContent = "کلید نمی‌تواند خالی باشد."; return; }
+    const accounts = loadAccounts();
+    accounts[p] = accounts[p] || [];
+    accounts[p].push({ id:genId(), name: name || `حساب ${accounts[p].length + 1}`, key });
+    saveAccounts(accounts);
+    renderSettingsPanel();
+    settingsMsgEl.textContent = "افزوده شد؛ در حال بارگیری مجدد…";
+    loadAll();
+    return;
+  }
+  const delBtn = e.target.closest(".del-acct");
+  if (delBtn){
+    const p = delBtn.dataset.p, id = delBtn.dataset.id;
+    const accounts = loadAccounts();
+    accounts[p] = (accounts[p] || []).filter(a => a.id !== id);
+    saveAccounts(accounts);
+    renderSettingsPanel();
+    settingsMsgEl.textContent = "حذف شد؛ در حال بارگیری مجدد…";
+    loadAll();
+  }
+});
+
+$("savekeys").addEventListener("click", () => {
+  const accounts = loadAccounts();
+  keyRowsEl.querySelectorAll(".acct-row").forEach(row => {
+    const p = row.dataset.p, id = row.dataset.id;
+    const name = row.querySelector(".acct-name").value.trim();
+    const key = row.querySelector(".acct-key").value.trim();
+    const item = (accounts[p] || []).find(a => a.id === id);
+    if (item){ item.name = name || item.name; item.key = key; }
+  });
+  saveAccounts(accounts);
+
+  proxySettings = {
+    proxy: proxyUrlEl.value.trim(),
+    template: proxyTplEl.value,
+    customTemplate: proxyCustomTplEl.value.trim() || "{proxy}/{url}",
+    encode: proxyEncodeEl.checked
+  };
+  saveProxySettings(proxySettings);
+
+  settingsMsgEl.textContent = "ذخیره شد؛ در حال بارگیری مجدد…";
+  loadAll();
+});
+
+/* ================= دریافت هر حساب ================= */
+async function fetchOneEndpoint(url, headers){
+  const finalUrl = buildProxyUrl(url);
+
+  let res;
+  try{
+    res = await fetch(finalUrl, { headers });
+  }catch{
+    throw Object.assign(new Error(`دسترسی ممکن نشد (پروکسی/شبکه) — ${finalUrl}`), { kind:"network" });
+  }
+
+  const text = await res.text();
+  if (!res.ok){
+    const kind = (res.status === 401 || res.status === 403) ? "auth" : "http";
+    let extra = "";
+    if (res.status === 403 && /account:usage/i.test(text)){
+      extra = " — این کلید نه بودجهٔ اختصاصی خودش را دارد و نه اجازهٔ account:usage؛ یا در پنل Pollinations " +
+              "برای همین کلید یک بودجه (budget) تنظیم کنید، یا پرمیشن account:usage را به آن اضافه کنید.";
+    }
+    throw Object.assign(new Error(`خطای ${res.status} ${res.statusText}` +
+      (kind === "auth" && !extra ? " — کلید API را بررسی کنید" : "") + extra +
+      (text ? ` — ${text.slice(0,140)}` : "")), { kind, status:res.status });
+  }
+
+  let data;
+  try{ data = JSON.parse(text); }
+  catch{ throw Object.assign(new Error(`پاسخ JSON معتبر نبود — ${text.slice(0,140)}`), { kind:"parse" }); }
+  return data;
+}
+
+/* ارائه‌دهنده‌های معمولی یک آدرس (p.url) دارند؛ برخی مثل تام‌داکت چند endpoint
+   (p.endpoints) دارند که یکی‌یکی و با فاصله گرفته می‌شوند و همه با هم به p.parse می‌روند. */
+async function fetchBalance(p, key){
+  const headers = { Accept:"application/json" };
+  if (key) headers.Authorization = `Bearer ${key}`;
+
+  if (Array.isArray(p.endpoints)){
+    const raw = {};
+    for (let i = 0; i < p.endpoints.length; i++){
+      const ep = p.endpoints[i];
+      raw[ep.key] = await fetchOneEndpoint(ep.url, headers);
+      if (i < p.endpoints.length - 1) await sleep(SEND_DELAY_MS);
+    }
+    return { raw, parsed:p.parse(raw) };
+  }
+
+  const data = await fetchOneEndpoint(p.url, headers);
+  return { raw:data, parsed:p.parse(data) };
+}
+
+function cardShell(p, a){
+  return `<div class="card" data-p="${esc(p.key)}" data-id="${esc(a.id)}">
+    <div class="chead">
+      <span class="badge" style="background:${provColor(p.key)}">${esc(p.label)} — ${esc(a.name)}</span>
+      <span class="stamp" data-role="stamp"></span>
+    </div>
+    <div data-role="body"><div class="state cardstate">در صف…</div></div>
+  </div>`;
+}
+
+function renderCardBody(cardEl, p, a, state){
+  const body = cardEl.querySelector('[data-role="body"]');
+  const stamp = cardEl.querySelector('[data-role="stamp"]');
+
+  if (state.status === "loading"){
+    body.innerHTML = `<div class="state cardstate"><div class="spinner"></div>در حال دریافت…</div>`;
+    stamp.textContent = "";
+    return;
+  }
+  if (state.status === "error"){
+    const needsKeyNote = !a.key
+      ? `<p class="keynote" style="margin-top:8px">برای حساب «${esc(a.name)}» کلید ${esc(p.label)} را در تنظیمات وارد کنید.</p>` : "";
+    body.innerHTML = `
+      <p class="err">${esc(state.error.message)}</p>${needsKeyNote}
+      <div class="cardfoot"><button type="button" data-role="refresh">تلاش مجدد</button></div>`;
+    stamp.textContent = "";
+    body.querySelector('[data-role="refresh"]').addEventListener("click", () => loadOne(p, a));
+    return;
+  }
+
+  const { parsed, raw } = state;
+  const barHtml = parsed.bar ? `
+    <div class="bar"><span style="width:${parsed.bar.pct}%"></span></div>
+    <div class="barlbl"><span>${esc(parsed.bar.text)}</span><span>${parsed.bar.pct.toFixed(0)}%</span></div>` : "";
+  const rowsHtml = parsed.rows.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+
+  body.innerHTML = `
+    <div class="biglabel">${esc(parsed.bigLabel)}</div>
+    <div class="big">${esc(typeof parsed.big === "number" ? fmtNum(parsed.big) : parsed.big)}</div>
+    ${barHtml}
+    <dl class="specs">${rowsHtml}</dl>
+    <div class="cardfoot">
+      <button type="button" class="refresh" data-role="refresh">بارگیری مجدد</button>
+    </div>
+    <details class="raw"><summary>دادهٔ خام JSON</summary><pre>${esc(JSON.stringify(raw, null, 2))}</pre></details>
+  `;
+  stamp.textContent = "به‌روزرسانی: " + new Date().toLocaleTimeString("fa-IR");
+  body.querySelector('[data-role="refresh"]').addEventListener("click", () => loadOne(p, a));
+}
+
+const cardState = {};
+
+async function loadOne(p, a){
+  let cardEl = cardsEl.querySelector(`.card[data-p="${p.key}"][data-id="${a.id}"]`);
+  if (!cardEl){
+    cardsEl.insertAdjacentHTML("beforeend", cardShell(p, a));
+    cardEl = cardsEl.querySelector(`.card[data-p="${p.key}"][data-id="${a.id}"]`);
+  }
+  const sk = `${p.key}::${a.id}`;
+  cardState[sk] = { status:"loading" };
+  renderCardBody(cardEl, p, a, cardState[sk]);
+  try{
+    const { raw, parsed } = await fetchBalance(p, a.key);
+    cardState[sk] = { status:"ok", raw, parsed };
+  }catch(err){
+    cardState[sk] = { status:"error", error:err };
+  }
+  renderCardBody(cardEl, p, a, cardState[sk]);
+}
+
+/* درخواست‌ها یکی‌یکی و با فاصلهٔ SEND_DELAY_MS ارسال می‌شوند، نه هم‌زمان با Promise.all */
+async function loadAll(){
+  const accounts = loadAccounts();
+  const pairs = [];
+  BALANCE_PROVIDERS.forEach(p => (accounts[p.key] || []).forEach(a => pairs.push({ p, a })));
+
+  if (!pairs.length){
+    cardsEl.innerHTML = `<div class="state">هیچ حسابی اضافه نشده. از «پروکسی CORS و حساب‌های API»
+      یک یا چند حساب برای هر ارائه‌دهنده اضافه کنید.</div>`;
+    globalMsgEl.textContent = "";
+    return;
+  }
+
+  cardsEl.innerHTML = pairs.map(({ p, a }) => cardShell(p, a)).join("");
+
+  for (let i = 0; i < pairs.length; i++){
+    const { p, a } = pairs[i];
+    globalMsgEl.textContent = `در حال دریافت ${i + 1} از ${pairs.length} (${p.label} — ${a.name})…`;
+    await loadOne(p, a);
+    if (i < pairs.length - 1) await sleep(SEND_DELAY_MS);
+  }
+  globalMsgEl.textContent = "";
+}
+
+$("reloadAll").addEventListener("click", loadAll);
+
+ensureSeeded();
+renderSettingsPanel();
+loadAll();
+</script>
+</body>
+</html>
