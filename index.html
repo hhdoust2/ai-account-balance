@@ -143,25 +143,6 @@
    مدل‌ها فقط از طریق داشبورد وب قابل چک‌کردن هستند، نه API. */
 const BALANCE_PROVIDERS = [
   {
-    key:"pollinations", label:"Pollinations", url:"https://gen.pollinations.ai/account/balance",
-    keyHint:"کلید Pollinations",
-    parse(raw){
-      const acc = raw.accountBalance || null;
-      return {
-        big: raw.balance,
-        bigLabel: "موجودی این کلید (Pollen)",
-        bars: [],
-        rows: [
-          ...(acc ? [
-            ["کل حساب (Quest + خریداری‌شده)", fmtNum(acc.total)],
-            ["سهمیهٔ Quest باقی‌مانده", fmtNum(acc.tier)],
-            ["Pollen خریداری‌شدهٔ باقی‌مانده", fmtNum(acc.paid)]
-          ] : [["نکته", "این کلید فقط بودجهٔ خودش را می‌بیند، نه کل حساب (accountBalance در پاسخ نبود)"]])
-        ]
-      };
-    }
-  },
-  {
     key:"openrouter", label:"OpenRouter", url:"https://openrouter.ai/api/v1/key",
     keyHint:"sk-or-...",
     parse(raw){
@@ -186,6 +167,44 @@ const BALANCE_PROVIDERS = [
       };
     }
   },
+  {
+    key:"anymodel", label:"AnyModel", url:"https://anymodel.org/v1/balance",
+    keyHint:"ANYMODEL_API_KEY",
+    parse(raw){
+      const unlimited = raw.unlimited === true;
+      return {
+        big: unlimited ? "نامحدود" : raw.balance,
+        bigLabel: "موجودی این کلید (balance tokens)",
+        bar: null,
+        rows: [
+          ["وضعیت (status)", raw.status ?? "—"],
+          ["نامحدود (unlimited)", unlimited ? "بله" : "خیر"],
+          ["کلید", raw.key ?? "—"]
+        ]
+      };
+    }
+  },
+  {
+  	
+    key:"pollinations", label:"Pollinations", url:"https://gen.pollinations.ai/account/balance",
+    keyHint:"کلید Pollinations",
+    parse(raw){
+      const acc = raw.accountBalance || null;
+      return {
+        big: raw.balance,
+        bigLabel: "موجودی این کلید (Pollen)",
+        bars: [],
+        rows: [
+          ...(acc ? [
+            ["کل حساب (Quest + خریداری‌شده)", fmtNum(acc.total)],
+            ["سهمیهٔ Quest باقی‌مانده", fmtNum(acc.tier)],
+            ["Pollen خریداری‌شدهٔ باقی‌مانده", fmtNum(acc.paid)]
+          ] : [["نکته", "این کلید فقط بودجهٔ خودش را می‌بیند، نه کل حساب (accountBalance در پاسخ نبود)"]])
+        ]
+      };
+    }
+  },
+
   {
     /* پلن «Code» — کلید با پیشوند tdcc_ — /code/v1/usage فقط خودِ سهمیه را برمی‌گرداند
        (برخلاف /code/v1/verify که اطلاعات کلید/پلن را هم دارد ولی برای این صفحه لازم نیست) */
