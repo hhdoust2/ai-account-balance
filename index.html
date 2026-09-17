@@ -150,7 +150,7 @@ const BALANCE_PROVIDERS = [
       return {
         big: raw.balance,
         bigLabel: "موجودی این کلید (Pollen)",
-        bar: null,
+        bars: [],
         rows: [
           ...(acc ? [
             ["کل حساب (Quest + خریداری‌شده)", fmtNum(acc.total)],
@@ -171,10 +171,11 @@ const BALANCE_PROVIDERS = [
       return {
         big: remaining != null ? remaining : "نامحدود",
         bigLabel: "اعتبار باقی‌ماندهٔ این کلید",
-        bar: hasLimit && remaining != null
-          ? { pct: Math.max(0, Math.min(100, (remaining / d.limit) * 100)),
-              text: `${fmtNum(remaining)} از ${fmtNum(d.limit)}` }
-          : null,
+        bars: (hasLimit && remaining != null) ? [{
+          label: "اعتبار کلید",
+          pct: Math.max(0, Math.min(100, (remaining / d.limit) * 100)),
+          text: `${fmtNum(remaining)} از ${fmtNum(d.limit)}`
+        }] : [],
         rows: [
           ["برچسب کلید", d.label ?? "—"],
           ["مصرف‌شده (usage)", fmtNum(d.usage)],
@@ -186,65 +187,58 @@ const BALANCE_PROVIDERS = [
     }
   },
   {
-    key:"anymodel", label:"AnyModel", url:"https://anymodel.org/v1/balance",
-    keyHint:"ANYMODEL_API_KEY",
+    /* پلن «Code» — کلید با پیشوند tdcc_ — /code/v1/usage فقط خودِ سهمیه را برمی‌گرداند
+       (برخلاف /code/v1/verify که اطلاعات کلید/پلن را هم دارد ولی برای این صفحه لازم نیست) */
+    key:"tomdacat_code", label:"TomDaCat (پلن Code)", url:"https://ai.tomdacat.com/code/v1/usage",
+    keyHint:"tdcc_...",
     parse(raw){
-      const unlimited = raw.unlimited === true;
+      const s = raw.session || {}, w = raw.weekly || {}, pr = raw.premium || null;
+      const fmtDate = iso => { try{ return new Date(iso).toLocaleString("fa-IR"); }catch{ return iso ?? "—"; } };
+      const bars = [];
+      if (s.limit != null) bars.push({
+        label: "سهمیهٔ نشست (Session)",
+        pct: Math.max(0, Math.min(100, (s.remaining / s.limit) * 100)),
+        text: `${fmtNum(s.remaining)} از ${fmtNum(s.limit)}`
+      });
+      if (w.limit != null) bars.push({
+        label: "سهمیهٔ هفتگی (Weekly)",
+        pct: Math.max(0, Math.min(100, (w.remaining / w.limit) * 100)),
+        text: `${fmtNum(w.remaining)} از ${fmtNum(w.limit)}`
+      });
       return {
-        big: unlimited ? "نامحدود" : raw.balance,
-        bigLabel: "موجودی این کلید (balance tokens)",
-        bar: null,
+        big: w.remaining ?? s.remaining ?? "—",
+        bigLabel: "سهمیهٔ هفتگی باقی‌مانده",
+        bars,
         rows: [
-          ["وضعیت (status)", raw.status ?? "—"],
-          ["نامحدود (unlimited)", unlimited ? "بله" : "خیر"],
-          ["کلید", raw.key ?? "—"]
+          ["پلن", raw.plan?.name ?? raw.plan?.id ?? "—"],
+          ["بازنشانی نشست", s.resetsAt ? fmtDate(s.resetsAt) : "—"],
+          ["بازنشانی هفتگی", w.resetsAt ? fmtDate(w.resetsAt) : "—"],
+          ["سهمیهٔ پرمیوم", pr ? `${fmtNum(pr.remaining)} از ${fmtNum(pr.limit)}` : "ندارد (این پلن سهمیهٔ پرمیوم جدا ندارد)"]
         ]
       };
     }
   },
   {
-    /* این ارائه‌دهنده دو endpoint دارد؛ چون usage فقط اعداد مصرف را می‌دهد و verify
-       اطلاعات پلن/کلید را، هر دو گرفته و در یک کارت با هم نمایش داده می‌شوند
-       (به‌ترتیب و با فاصلهٔ SEND_DELAY_MS، نه هم‌زمان). */
-    key:"tomdacat", label:"Tomdacat Code",
-    endpoints:[
-      { key:"usage",  url:"https://ai.tomdacat.com/code/v1/usage" },
-      { key:"verify", url:"https://ai.tomdacat.com/code/v1/verify" }
-    ],
-    keyHint:"tdcc_...",
+    /* پلن «اعتباری/Credit» — کلید با پیشوند tdc_ — هیچ endpoint مخصوص موجودی ندارد؛
+       فقط با یک درخواست واقعی chat completion (کوچک، max_tokens:5) می‌شود credits را خواند.
+       یعنی هر بار چک‌کردن این کارت کمی از اعتبار حساب را مصرف می‌کند (به‌خواست کاربر خودکار هم اجرا می‌شود). */
+    key:"tomdacat_credit", label:"TomDaCat (اعتباری)", url:"https://ai.tomdacat.com/v1/chat/completions",
+    keyHint:"tdc_...", method:"POST",
+    body:{ model:"gpt-5-mini", messages:[{ role:"user", content:"ok" }], max_tokens:5, temperature:0.1, stream:false },
     parse(raw){
-      const usage = raw.usage || {};
-      const verify = raw.verify || {};
-      const vUsage = verify.usage || {};
-      const session = usage.session || vUsage.session || {};
-      const weekly  = usage.weekly  || vUsage.weekly  || {};
-      const premium = usage.premium ?? vUsage.premium ?? null;
-      const plan = verify.plan || usage.plan || {};
-      const remaining = session.remaining ?? (
-        session.limit != null && session.used != null ? session.limit - session.used : null
-      );
-      const hasLimit = session.limit != null;
-
+      const c = raw.tomdacat;
+      if (!c){
+        throw new Error("این پاسخ فیلد tomdacat (credits) را نداشت — یا کلید نامعتبر است، یا پروکسی/مدل این فیلد را حذف کرده.");
+      }
       return {
-        big: remaining != null ? remaining : "—",
-        bigLabel: "باقی‌ماندهٔ سهمیهٔ Session",
-        bar: hasLimit && remaining != null
-          ? { pct: Math.max(0, Math.min(100, (remaining / session.limit) * 100)),
-              text: `${fmtNum(remaining)} از ${fmtNum(session.limit)}` }
-          : null,
+        big: c.creditsRemaining,
+        bigLabel: "کل اعتبار باقی‌ماندهٔ حساب",
+        bars: [],
         rows: [
-          ["پلن", plan.name ?? "—"],
-          ["وضعیت پلن", plan.status ?? "—"],
-          ["مدل‌های مجاز", (plan.models || []).join("، ") || "—"],
-          ["مدل‌های پرمیوم", (plan.premiumModels || []).join("، ") || "—"],
-          ["بازنشانی سهمیهٔ Session", session.resetsAt ?? "—"],
-          ["مصرف هفتگی", `${fmtNum(weekly.used)} از ${fmtNum(weekly.limit)}`],
-          ["بازنشانی سهمیهٔ هفتگی", weekly.resetsAt ?? "—"],
-          ["سهمیهٔ مدل پرچمدار (premium)", premium == null ? "بدون سهمیهٔ جدا" :
-            `${fmtNum(premium.used)} از ${fmtNum(premium.limit)}`],
-          ["اعتبار کلید (valid)", verify.valid === true ? "بله" : verify.valid === false ? "خیر" : "—"],
-          ["نام کلید", verify.key?.name ?? "—"],
-          ["آخرین استفادهٔ کلید", verify.key?.lastUsedAt ?? "—"]
+          ["اعتبار رایگان باقی‌مانده (free)", fmtNum(c.freeCreditsRemaining)],
+          ["اعتبار پولی باقی‌مانده (paid)", fmtNum(c.paidCreditsRemaining)],
+          ["مصرف‌شده در همین تست", fmtNum(c.creditsCharged)],
+          ["مدل تستِ استفاده‌شده", "gpt-5-mini"]
         ]
       };
     }
@@ -323,6 +317,12 @@ function loadAccounts(){
 }
 function saveAccounts(obj){ try{ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(obj)); }catch{} }
 
+/* هر ارائه‌دهنده می‌تواند مستقل از تنظیم پروکسی سراسری، «مستقیم» (بدون پروکسی) علامت بخورد —
+   چون بعضی پروکسی‌ها فقط GET را درست فوروارد می‌کنند و با POST+body (مثل تست اعتباری TomDaCat) مشکل دارند */
+const DIRECT_KEY = "balance_provider_direct_v1";
+function loadDirectFlags(){ try{ return JSON.parse(localStorage.getItem(DIRECT_KEY)) || {}; }catch{ return {}; } }
+function saveDirectFlags(o){ try{ localStorage.setItem(DIRECT_KEY, JSON.stringify(o)); }catch{} }
+
 function ensureSeeded(){
   const accounts = loadAccounts();
   const legacy = loadLegacyKeys();
@@ -351,6 +351,7 @@ function renderSettingsPanel(){
   proxyEncodeEl.checked = !!proxySettings.encode;
 
   const accounts = loadAccounts();
+  const directFlags = loadDirectFlags();
   keyRowsEl.innerHTML = BALANCE_PROVIDERS.map(p => {
     const list = accounts[p.key] || [];
     const rows = list.map(a => `
@@ -361,7 +362,11 @@ function renderSettingsPanel(){
       </div>`).join("") || `<p class="keynote">هنوز حسابی برای ${esc(p.label)} اضافه نشده.</p>`;
 
     return `<div class="acct-block" data-p="${esc(p.key)}">
-      <span class="badge" style="background:${provColor(p.key)}">${esc(p.label)}</span>
+      <div class="keyrow" style="justify-content:space-between">
+        <span class="badge" style="background:${provColor(p.key)}">${esc(p.label)}</span>
+        <label class="p-chk"><input type="checkbox" class="acct-direct" data-p="${esc(p.key)}"
+          ${directFlags[p.key] ? "checked" : ""}> درخواست مستقیم (بدون پروکسی)</label>
+      </div>
       ${rows}
       <div class="keyrow new-acct-row" data-p="${esc(p.key)}">
         <input type="text" class="acct-name-new" placeholder="اسم حساب (مثلاً «اکانت ۱»)">
@@ -416,6 +421,10 @@ $("savekeys").addEventListener("click", () => {
   });
   saveAccounts(accounts);
 
+  const directFlags = {};
+  keyRowsEl.querySelectorAll(".acct-direct").forEach(cb => { directFlags[cb.dataset.p] = cb.checked; });
+  saveDirectFlags(directFlags);
+
   proxySettings = {
     proxy: proxyUrlEl.value.trim(),
     template: proxyTplEl.value,
@@ -429,14 +438,25 @@ $("savekeys").addEventListener("click", () => {
 });
 
 /* ================= دریافت هر حساب ================= */
-async function fetchOneEndpoint(url, headers){
-  const finalUrl = buildProxyUrl(url);
+async function fetchBalance(p, key){
+  const method = p.method || "GET";
+  const headers = { Accept:"application/json" };
+  if (key) headers.Authorization = `Bearer ${key}`;
+  if (method === "POST") headers["Content-Type"] = "application/json";
+  const isDirect = !!loadDirectFlags()[p.key];
+  const finalUrl = isDirect ? p.url : buildProxyUrl(p.url);
 
   let res;
   try{
-    res = await fetch(finalUrl, { headers });
+    res = await fetch(finalUrl, {
+      method, headers,
+      body: method === "POST" ? JSON.stringify(p.body || {}) : undefined
+    });
   }catch{
-    throw Object.assign(new Error(`دسترسی ممکن نشد (پروکسی/شبکه) — ${finalUrl}`), { kind:"network" });
+    const hint = isDirect
+      ? " (اگر «درخواست مستقیم» را روشن کرده‌اید و مرورگر آن را با خطای CORS مسدود کرده، آن را خاموش کنید تا دوباره از پروکسی استفاده شود)"
+      : "";
+    throw Object.assign(new Error(`دسترسی ممکن نشد (پروکسی/شبکه)${hint} — ${finalUrl}`), { kind:"network" });
   }
 
   const text = await res.text();
@@ -447,34 +467,27 @@ async function fetchOneEndpoint(url, headers){
       extra = " — این کلید نه بودجهٔ اختصاصی خودش را دارد و نه اجازهٔ account:usage؛ یا در پنل Pollinations " +
               "برای همین کلید یک بودجه (budget) تنظیم کنید، یا پرمیشن account:usage را به آن اضافه کنید.";
     }
+    if (res.status === 502 && method === "POST" && !isDirect){
+      extra = " — این معمولاً یعنی پروکسی CORS شما درخواست POST همراه با body را درست فوروارد نمی‌کند " +
+              "(بعضی پروکسی‌های ساده فقط GET را پشتیبانی می‌کنند). تیک «درخواست مستقیم (بدون پروکسی)» را برای " +
+              "همین ارائه‌دهنده در تنظیمات بزنید تا از پروکسی رد نشود؛ اگر مرورگرتان CORS را بلاک کرد، یعنی " +
+              "خودِ https://ai.tomdacat.com باید پروکسی شود و باید پروکسی را طوری تنظیم کنید که POST را فوروارد کند.";
+    }
+    if ((res.status === 502 || res.status === 504) && method === "POST"){
+      extra = " — این کارت با یک درخواست POST واقعی (chat completion) چک می‌شود، برخلاف بقیهٔ کارت‌ها که فقط GET " +
+              "می‌زنند؛ اگر پروکسی‌تان روش/بدنهٔ POST را درست به مقصد فوروارد نکند، یا پاسخ کندتر از حد مجاز پروکسی برسد، " +
+              "همین خطا رخ می‌دهد. برای عیب‌یابی: یک‌بار آدرس پروکسی را خالی کنید (اتصال مستقیم) و دوباره همین کارت را " +
+              "بارگیری کنید تا مشخص شود مشکل از پروکسی است یا از خودِ TomDaCat.";
+    }
     throw Object.assign(new Error(`خطای ${res.status} ${res.statusText}` +
       (kind === "auth" && !extra ? " — کلید API را بررسی کنید" : "") + extra +
-      (text ? ` — ${text.slice(0,140)}` : "")), { kind, status:res.status });
+      (text ? ` — ${text.slice(0,400)}` : "")), { kind, status:res.status });
   }
 
   let data;
   try{ data = JSON.parse(text); }
-  catch{ throw Object.assign(new Error(`پاسخ JSON معتبر نبود — ${text.slice(0,140)}`), { kind:"parse" }); }
-  return data;
-}
+  catch{ throw Object.assign(new Error(`پاسخ JSON معتبر نبود — ${text.slice(0,400)}`), { kind:"parse" }); }
 
-/* ارائه‌دهنده‌های معمولی یک آدرس (p.url) دارند؛ برخی مثل تام‌داکت چند endpoint
-   (p.endpoints) دارند که یکی‌یکی و با فاصله گرفته می‌شوند و همه با هم به p.parse می‌روند. */
-async function fetchBalance(p, key){
-  const headers = { Accept:"application/json" };
-  if (key) headers.Authorization = `Bearer ${key}`;
-
-  if (Array.isArray(p.endpoints)){
-    const raw = {};
-    for (let i = 0; i < p.endpoints.length; i++){
-      const ep = p.endpoints[i];
-      raw[ep.key] = await fetchOneEndpoint(ep.url, headers);
-      if (i < p.endpoints.length - 1) await sleep(SEND_DELAY_MS);
-    }
-    return { raw, parsed:p.parse(raw) };
-  }
-
-  const data = await fetchOneEndpoint(p.url, headers);
   return { raw:data, parsed:p.parse(data) };
 }
 
@@ -509,15 +522,16 @@ function renderCardBody(cardEl, p, a, state){
   }
 
   const { parsed, raw } = state;
-  const barHtml = parsed.bar ? `
-    <div class="bar"><span style="width:${parsed.bar.pct}%"></span></div>
-    <div class="barlbl"><span>${esc(parsed.bar.text)}</span><span>${parsed.bar.pct.toFixed(0)}%</span></div>` : "";
+  const barsHtml = (parsed.bars || []).map(b => `
+    <div class="barlbl" style="margin-top:8px"><span>${esc(b.label)}</span></div>
+    <div class="bar"><span style="width:${b.pct}%"></span></div>
+    <div class="barlbl"><span>${esc(b.text)}</span><span>${b.pct.toFixed(0)}%</span></div>`).join("");
   const rowsHtml = parsed.rows.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
 
   body.innerHTML = `
     <div class="biglabel">${esc(parsed.bigLabel)}</div>
     <div class="big">${esc(typeof parsed.big === "number" ? fmtNum(parsed.big) : parsed.big)}</div>
-    ${barHtml}
+    ${barsHtml}
     <dl class="specs">${rowsHtml}</dl>
     <div class="cardfoot">
       <button type="button" class="refresh" data-role="refresh">بارگیری مجدد</button>
