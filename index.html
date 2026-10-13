@@ -243,7 +243,7 @@ const BALANCE_PROVIDERS = [
        یعنی هر بار چک‌کردن این کارت کمی از اعتبار حساب را مصرف می‌کند (به‌خواست کاربر خودکار هم اجرا می‌شود). */
     key:"tomdacat_credit", label:"TomDaCat (اعتباری)", url:"https://ai.tomdacat.com/v1/chat/completions",
     keyHint:"tdc_...", method:"POST",
-    body:{ model:"gpt-5-mini", messages:[{ role:"user", content:"ok" }], max_tokens:5, temperature:0.1, stream:false },
+    body:{ model:"deepseek-v4-flash-special", messages:[{ role:"user", content:"ok" }], max_tokens:5, temperature:0.1, stream:false },
     parse(raw){
       const c = raw.tomdacat;
       if (!c){
