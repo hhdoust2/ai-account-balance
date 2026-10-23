@@ -243,7 +243,7 @@ const BALANCE_PROVIDERS = [
        یعنی هر بار چک‌کردن این کارت کمی از اعتبار حساب را مصرف می‌کند (به‌خواست کاربر خودکار هم اجرا می‌شود). */
     key:"tomdacat_credit", label:"TomDaCat (اعتباری)", url:"https://ai.tomdacat.com/v1/chat/completions",
     keyHint:"tdc_...", method:"POST",
-    body:{ model:"deepseek-v4-flash-special", messages:[{ role:"user", content:"ok" }], max_tokens:5, temperature:0.1, stream:false },
+    body:{ model:"GPT-6 Luna", messages:[{ role:"user", content:"ok" }], max_tokens:5, temperature:0.1, stream:false },
     parse(raw){
       const c = raw.tomdacat;
       if (!c){
@@ -257,7 +257,7 @@ const BALANCE_PROVIDERS = [
           ["اعتبار رایگان باقی‌مانده (free)", fmtNum(c.freeCreditsRemaining)],
           ["اعتبار پولی باقی‌مانده (paid)", fmtNum(c.paidCreditsRemaining)],
           ["مصرف‌شده در همین تست", fmtNum(c.creditsCharged)],
-          ["مدل تستِ استفاده‌شده", "gpt-5-mini"]
+          ["مدل تستِ استفاده‌شده", "GPT-6 Luna"]
         ]
       };
     }
